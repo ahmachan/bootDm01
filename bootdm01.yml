@@ -1,0 +1,13 @@
+version: "2"
+services:
+  javaweb:
+    container_name: javaWeb
+    image: jdk8-tomcat8-maven:v0.1
+    volumes:
+        - ${PWD}/target:/opt/tmp
+        - /etc/localtime:/etc/localtime:ro
+    command: /bin/sh -c "java -Djava.security.egd=file:/dev/./urandom -jar /opt/tmp/app.jar"
+    ports:
+        - "8097:8081"
+    restart: always
+
