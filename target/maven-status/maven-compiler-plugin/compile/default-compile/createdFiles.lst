@@ -3,6 +3,7 @@ com/xmage/dm01/controller/HelloController.class
 com/xmage/dm01/utils/AesCBC.class
 com/xmage/dm01/controller/AgentController.class
 com/xmage/dm01/controller/StoreController.class
+com/xmage/dm01/utils/AesUtil.class
 com/xmage/dm01/SampleMainApplication.class
 com/xmage/dm01/model/User.class
 com/xmage/dm01/utils/RSAUtil.class

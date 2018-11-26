@@ -5,5 +5,6 @@
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/controller/HelloController.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/SampleMainApplication.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/utils/RSAUtil.java
+/opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/utils/AesUtil.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/controller/DemoController.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/model/User.java

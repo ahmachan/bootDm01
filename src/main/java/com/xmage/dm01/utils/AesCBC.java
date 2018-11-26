@@ -95,7 +95,6 @@ public class AesCBC {
          * if (key.length != 32 || key.length != 48 || key.length != 64) { throw
          * new IllegalArgumentException("Invalid key size."); }
          */
-    
     	
         byte[] ciphertextBytes = Base64.getDecoder().decode(encrypted.getBytes());//java8
         IvParameterSpec iv = new IvParameterSpec(ciphertextBytes, 0, 16);

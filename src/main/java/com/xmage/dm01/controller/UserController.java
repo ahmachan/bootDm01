@@ -1,7 +1,6 @@
 package com.xmage.dm01.controller;
 
 import java.security.GeneralSecurityException;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -12,19 +11,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 import com.xmage.dm01.model.User;
 import com.xmage.dm01.utils.AesCBC;
-import com.xmage.dm01.utils.RSAUtil;
+import com.xmage.dm01.utils.AesUtil;
 
 @Controller
 @RequestMapping("/user")
 public class UserController {
     
-	private Long expTime = (long) 86400000;
-	
-	private String secret = "RSA-SHA128";
-	
+
 	@GetMapping("/login")
     public String login() {
         return "/login";
@@ -80,6 +81,79 @@ public class UserController {
 		
 		return ntime;
     }
+    
+	@RequestMapping(value = "/aes/encrypt", method = RequestMethod.POST)
+    public String aesEncrypt(
+    		@RequestParam(value = "code", required = true, defaultValue = "") String code,
+    		ModelMap model
+    		) { 
+    	String aesEncrypted256 = code;
+    	String key = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT";	     
+    	String iv = "SOME-INITIAL-VECTOR-USED-ONLY-16-BYTES";
+    	String aesDecrypted256 = "";
+    	try {
+    		AesUtil.cipherIv = iv;
+    		aesDecrypted256 = AesUtil.decrypt(aesEncrypted256, key, 256);
+
+    		System.out.println("aesDecrypted256::"+aesDecrypted256);
+    		
+
+
+    	} catch (Exception e) {
+    		//e.printStackTrace();
+    		
+    	}
+    	
+    	List<User> userList = new ArrayList<User>();
+        for (int i = 0; i <10; i++) {
+        	Long ii = (long)i;
+            userList.add(new User(ii,"张三"+ii,20+i,String.format("中国广州:%s",aesDecrypted256)));
+        }
+        
+        model.addAttribute("users", userList);
+        return "/user/list";
+    }
+    
+    @RequestMapping("/aes")
+    public String genrateAes(ModelMap model){
+	    String plain = "SOME-DATA-TO-BLOCK-ENCRYPTION";
+	    //String key = "SOME-ENCRYPTION-KEY-USED-ONLY-16-OR-32-BYTES";
+	    String key = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT";	     
+	    String iv = "SOME-INITIAL-VECTOR-USED-ONLY-16-BYTES";
+	    
+	    String[] arrParams={"10831918","1543204765.2344618","1543204765"};
+	    plain = JSON.toJSONString(arrParams);  
+        System.out.println("jsonString2:" + plain); 
+
+	    
+	    try {
+	      System.out.println("plain::"+plain);
+	      System.out.println("key::"+key);
+	      System.out.println("iv::"+iv);
+	      //System.out.println("iv::"+Base64.getEncoder().encodeToString(iv.getBytes("UTF-8")));
+	     
+	      //System.out.println("iv::"+Base64.getEncoder().encodeToString(iv.getBytes()));
+	      
+	      byte[] data = plain.getBytes("UTF-8");
+	      //String aesEncrypted128 = AesUtil.encrypt(data, key, iv, 128);
+	      String aesEncrypted256 = AesUtil.encrypt(data, key, iv, 256);
+
+	      //System.out.println("aesEncrypted128::"+aesEncrypted128);
+	      System.out.println("aesEncrypted256::"+aesEncrypted256);
+	      
+	      //String aesDecrypted128 = AesUtil.decrypt(aesEncrypted128, key, iv, 128);
+	      //iv = AesUtil.cipherIv;
+	      String aesDecrypted256 = AesUtil.decrypt(aesEncrypted256, key, 256);
+
+	      //System.out.println("aesDecrypted128::"+aesDecrypted128);
+	      System.out.println("aesDecrypted256::"+aesDecrypted256);
+	    } catch (Exception e) {
+	      e.printStackTrace();
+	    }
+	    
+	    model.addAttribute("user",new User((long) 1085265,"张三",20,"中国广州"));
+        return "/user/detail";
+   }
     
     @GetMapping("/{userId}/profile")
     public String  getUserProfile(@PathVariable Long userId,ModelMap model) {  
@@ -141,76 +215,10 @@ public class UserController {
 		}
         System.out.println("解密后的字串是：" + DeString);
         
-        //System.out.println("密文：" + RSAUtil.parseByte2HexStr(encryptResult));  
-          
-        //String decryptResult = RSAUtil.decryptAES256(encryptResult, password);  
-        //System.out.println("解密：" + decryptResult);  
-    	
-    	//String content = "{name:xmage,age:25,sex:fame,address:湖南省gzone}";
-    	/*
-    	Map<String,Object> keyMap = new HashMap<String, Object>();
-		keyMap.put("name", "xmage");
-		keyMap.put("time", "15896965874");
-		String content =keyMap.toString();
-		*/
-		/*
-		Timestamp nowTimestamp = new Timestamp(new Date().getTime());	
-		Long nowTime = nowTimestamp.getTime() + expTime;
-		//String content ="${userId.toString()}:${nowTime}:${secret}";
-		String content =String.format("%d:%d:%s",userId,nowTime,secret);
-
-        //1.初始化公钥私钥
-        String rsaPublicKey = null;
-        String rsaPrivateKey = null;
-        try {
-            Map<String, Object> map = RSAUtil.initKey();
-            rsaPublicKey = RSAUtil.getPublicKey(map);
-            rsaPrivateKey = RSAUtil.getPrivateKey(map);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        //2.使用公钥加密
-        try {
-            System.out.println("加密前=="+content);
-            byte[] result_m = RSAUtil.encryptByPublicKey(content.getBytes(), rsaPublicKey);
-            content = RSAUtil.encryptBASE64(result_m);
-            System.out.println("加密后=="+content);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //3.私钥解密
-        try {
-            byte[] b1 = RSAUtil.decryptBASE64(content);
-            byte[] b2 = RSAUtil.decryptByPrivateKey(b1, rsaPrivateKey);
-            content = new String(b2);
-            String[] arrStr = content.split(":");
-            System.out.println("解密后=="+content);
-            System.out.println("userId=="+arrStr[0]);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-        //4.私钥加签
-        String sign = null;
-        try {
-            sign = RSAUtil.sign(content.getBytes(), rsaPrivateKey);
-            System.out.println("签名=="+sign);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        //5.公钥验签
-        try {
-            boolean flag = RSAUtil.verify(content.getBytes(), rsaPublicKey, sign);
-            System.out.println("延签结果=="+flag);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-*/
         model.addAttribute("user",new User(userId,"张三",20,"gzProfile"));
         return "/user/detail";
     }
+    
+    
     
 }
