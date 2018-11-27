@@ -33,12 +33,13 @@ public class AesUtil {
 			cipherIv = iv;
 			Cipher ciper = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
 			byte[] ivBytes = string2SizedBytes(iv, ciper.getBlockSize());
-			byte[] keyBytes = string2SizedBytes(key, keyBlockSizeBit/8);
-
+			//byte[] keyBytes = string2SizedBytes(key, keyBlockSizeBit/8);
+			byte[] keyBytes  = key.getBytes(DEFAULT_ENCODING);
 
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
 			IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
-
+			//IvParameterSpec ivSpec = genIvParams();
+			
 			ciper.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
              /* 
             String lastRes = String.format("%s%s", 
@@ -78,11 +79,13 @@ public class AesUtil {
 			String iv = cipherIv;
 			byte[] data  = Base64.getDecoder().decode(input);			
 			Cipher ciper = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
-			byte[] ivBytes = string2SizedBytes(iv, ciper.getBlockSize());
-			byte[] keyBytes = string2SizedBytes(key, keyBlockSizeBit/8);
+			//byte[] ivBytes = string2SizedBytes(iv, ciper.getBlockSize());
+			//byte[] keyBytes = string2SizedBytes(key, keyBlockSizeBit/8);
+			byte[] keyBytes  = key.getBytes(DEFAULT_ENCODING);
 
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
-			IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
+			//IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
+			IvParameterSpec ivSpec = genIvParams();
 
 			ciper.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 
@@ -99,11 +102,18 @@ public class AesUtil {
 		}
 	}
 
-	private static byte[] string2SizedBytes(String in, int size) throws UnsupportedEncodingException {
-		byte[] bytesIn = in.getBytes(DEFAULT_ENCODING);
-		byte[] out = new byte[size];
+    private static IvParameterSpec genIvParams() throws UnsupportedEncodingException {
+    	//byte[] aesIv = { 0x12, 0x34, 0x56, 0x78, (byte) 0x90, (byte) 0xAB,(byte) 0xCD, (byte) 0xEF };// 缓冲区
+		byte[] aesIv ="1234567890123456".getBytes(DEFAULT_ENCODING);
+		IvParameterSpec iv = new IvParameterSpec(aesIv);// 设置向量
+    	return iv;
+    }
+    
+	private static byte[] string2SizedBytes(String inStr, int size) throws UnsupportedEncodingException {
+		byte[] bytesIn = inStr.getBytes(DEFAULT_ENCODING);
+		byte[] bytesOut = new byte[size];
 		int maxLen = bytesIn.length > size ? size : bytesIn.length;
-		System.arraycopy(bytesIn, 0, out, 0, maxLen);
-		return out;
+		System.arraycopy(bytesIn, 0, bytesOut, 0, maxLen);
+		return bytesOut;
 	}
 }

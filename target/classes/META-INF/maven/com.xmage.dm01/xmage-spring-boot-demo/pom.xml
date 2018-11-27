@@ -19,7 +19,7 @@
         <!-- pom文件中的spring-boot-starter-thymeleaf中已经包含了thymeleaf，但是版本是2.0的，现在需要升级到3.0-->
         <thymeleaf.version>3.0.2.RELEASE</thymeleaf.version>
         <thymeleaf-layout-dialect.version>2.1.1</thymeleaf-layout-dialect.version>
-        <docker.image.prefix>springio</docker.image.prefix>
+        <!-- <docker.image.prefix>springio</docker.image.prefix> -->
     </properties>
     <dependencies>
         <dependency>
@@ -36,12 +36,13 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-        <dependency>
-            <!-- 修改html后不需要重启 -->
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-devtools</artifactId>
-            <optional>true</optional>
-        </dependency>
+	<!-- 热启动:修改后不需要重启 -->
+	<dependency>
+	    <groupId>org.springframework.boot</groupId>
+	    <artifactId>spring-boot-devtools</artifactId>
+	    <optional>true</optional>
+	    <scope>provided</scope>
+	</dependency>
         <!-- Spring Boot Freemarker 依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -62,11 +63,15 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
+           <!-- 支持devtools -->
+	   <plugin>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-maven-plugin</artifactId>
+		<configuration>
+		   <!-- 没有该配置,devtools不生效 -->
+		   <fork>true</fork>
+		</configuration>
+	    </plugin>
            <!-- 
             <plugin>
                 <groupId>com.spotify</groupId>
