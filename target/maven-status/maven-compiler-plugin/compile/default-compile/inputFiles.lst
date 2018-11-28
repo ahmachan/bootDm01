@@ -7,6 +7,7 @@
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/controller/AgentController.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/controller/UserController.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/utils/Base64Test.java
+/opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/utils/ResponseResult.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/SampleMainApplication.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/controller/DemoController.java
 /opt/html/javaweb/bootDm01/src/main/java/com/xmage/dm01/model/User.java

@@ -29,28 +29,18 @@ public class AesUtil {
 	{
 		//aes-128-cbc,aes-256-cbc
 		try {
-			//iv = iv.substring(0, 16);
 			cipherIv = iv;
 			Cipher ciper = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
-			byte[] ivBytes = string2SizedBytes(iv, ciper.getBlockSize());
-			//byte[] keyBytes = string2SizedBytes(key, keyBlockSizeBit/8);
-			byte[] keyBytes  = key.getBytes(DEFAULT_ENCODING);
 
-			SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
-			IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
-			//IvParameterSpec ivSpec = genIvParams();
+			byte[] ivBytes = transToSizedBytes(iv,ciper.getBlockSize());
+			IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);// 设置向量
+			byte[] keyBytes = transToSizedBytes(key, keyBlockSizeBit/8);
+	    	SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
 			
-			ciper.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
-             /* 
-            String lastRes = String.format("%s%s", 
-            		Base64.getEncoder().encodeToString(ciper.doFinal(data)),
-            		Base64.getEncoder().encodeToString(iv.getBytes("UTF-8"))
-            		);*/
-                   
+			ciper.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);                    
 			return Base64.getEncoder().encodeToString(ciper.doFinal(data));
 		} catch (NoSuchAlgorithmException
 				| NoSuchPaddingException
-				| UnsupportedEncodingException
 				| InvalidKeyException
 				| InvalidAlgorithmParameterException
 				| IllegalBlockSizeException
@@ -67,32 +57,66 @@ public class AesUtil {
 	IllegalBlockSizeException, BadPaddingException
 	{
 		try {
-			/*
-			System.out.println(input);
-			iv = input.substring(input.length()- 16);
-			System.out.println(iv);
-			input = input.substring(0, input.length()-16);
-			System.out.println(input);
-			System.out.println(input.length());
-			*/
-			
+		
 			String iv = cipherIv;
 			byte[] data  = Base64.getDecoder().decode(input);			
 			Cipher ciper = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
-			//byte[] ivBytes = string2SizedBytes(iv, ciper.getBlockSize());
-			//byte[] keyBytes = string2SizedBytes(key, keyBlockSizeBit/8);
-			byte[] keyBytes  = key.getBytes(DEFAULT_ENCODING);
-
-			SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
-			//IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
-			IvParameterSpec ivSpec = genIvParams();
-
+			
+			byte[] ivBytes = transToSizedBytes(iv,ciper.getBlockSize());
+			IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);// 设置向量
+			byte[] keyBytes = transToSizedBytes(key, keyBlockSizeBit/8);
+	    	SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
+			
 			ciper.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
-
 			return new String(ciper.doFinal(data));
 		} catch (NoSuchAlgorithmException
 				| NoSuchPaddingException
-				| UnsupportedEncodingException
+				| InvalidKeyException
+				| InvalidAlgorithmParameterException
+				| IllegalBlockSizeException
+				| BadPaddingException
+				e) {
+			throw e;
+		}
+	}
+	
+	public static String encryptMixed(byte[] data, String key, String iv, int keyBlockSizeBit) throws
+	NoSuchAlgorithmException, NoSuchPaddingException,
+	UnsupportedEncodingException, InvalidKeyException,
+	InvalidAlgorithmParameterException,
+	IllegalBlockSizeException, BadPaddingException
+	{
+		//aes-128-cbc,aes-256-cbc
+		try {
+			cipherIv = iv;
+			Cipher ciper = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
+			
+			byte[] ivBytes = transToSizedBytes(iv,ciper.getBlockSize());
+			IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);// 设置向量
+			byte[] keyBytes = transToSizedBytes(key, keyBlockSizeBit/8);
+	    	SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
+			
+			ciper.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
+            byte[] lastBytes = ciper.doFinal(data);
+            int size =lastBytes.length+ivBytes.length;
+            byte[] unitBytes =  new byte[size];
+            System.arraycopy(lastBytes, 0, unitBytes, 0, lastBytes.length);
+            System.arraycopy(ivBytes, 0, unitBytes, lastBytes.length, ivBytes.length);
+            
+            String lastString = Base64.getEncoder().encodeToString(lastBytes);
+            String lastIvString = Base64.getEncoder().encodeToString(ivBytes);
+			return String.format("%s,%s|base64Len=%d:%d|bytesLen=%d:%d|other:%s|total:%d", 
+					lastString,
+            		lastIvString,
+            		lastString.length(),
+            		lastIvString.length(),
+            		lastBytes.length,
+            		ivBytes.length,
+            		Base64.getEncoder().encodeToString(unitBytes),
+            		unitBytes.length
+            		);
+		} catch (NoSuchAlgorithmException
+				| NoSuchPaddingException
 				| InvalidKeyException
 				| InvalidAlgorithmParameterException
 				| IllegalBlockSizeException
@@ -102,15 +126,66 @@ public class AesUtil {
 		}
 	}
 
-    private static IvParameterSpec genIvParams() throws UnsupportedEncodingException {
-    	//byte[] aesIv = { 0x12, 0x34, 0x56, 0x78, (byte) 0x90, (byte) 0xAB,(byte) 0xCD, (byte) 0xEF };// 缓冲区
-		byte[] aesIv ="1234567890123456".getBytes(DEFAULT_ENCODING);
-		IvParameterSpec iv = new IvParameterSpec(aesIv);// 设置向量
-    	return iv;
-    }
-    
-	private static byte[] string2SizedBytes(String inStr, int size) throws UnsupportedEncodingException {
-		byte[] bytesIn = inStr.getBytes(DEFAULT_ENCODING);
+	public static String decryptMixed(String input, String key, int keyBlockSizeBit) throws
+	NoSuchAlgorithmException, NoSuchPaddingException,
+	UnsupportedEncodingException, InvalidKeyException,
+	InvalidAlgorithmParameterException,
+	IllegalBlockSizeException, BadPaddingException
+	{
+		try {
+		
+			String ivStr = "";//cipherIv;
+			String inputStr = "";
+			Cipher ciper = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
+			
+			byte[] inputBytes = Base64.getDecoder().decode(input);
+			int ivBytesLength = ciper.getBlockSize();
+			int inputBytesLength = inputBytes.length;
+			int out1len = inputBytesLength-ivBytesLength;
+			/*
+			byte[] bytesOut1 = new byte[out1len];
+			byte[] bytesOut2 = new byte[ivBytesLength];			
+			System.arraycopy(inputBytes, out1len, bytesOut2, 0, ivBytesLength);
+			System.arraycopy(inputBytes, 0, bytesOut1, 0, out1len);
+			
+			byte[] tempIv = Base64.getDecoder().decode(new String(bytesOut2,DEFAULT_ENCODING));
+			ivStr = new String(tempIv,DEFAULT_ENCODING);
+			System.out.println(ivStr);
+			
+			inputStr = new String(bytesOut1,DEFAULT_ENCODING);
+			byte[] data  = Base64.getDecoder().decode(inputStr);
+			System.out.println(new String(data,DEFAULT_ENCODING));
+			*/
+			/*
+			byte[] ivBytes = transToSizedBytes(ivStr,ciper.getBlockSize());
+			IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);// 设置向量
+			byte[] keyBytes = transToSizedBytes(key, keyBlockSizeBit/8);
+	    	SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
+			
+			ciper.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+			return new String(ciper.doFinal(data));
+			*/
+			return inputBytesLength+"---"+out1len;
+		} catch (NoSuchAlgorithmException
+				| NoSuchPaddingException
+				//| InvalidKeyException
+				//| InvalidAlgorithmParameterException
+				//| IllegalBlockSizeException
+				//| BadPaddingException
+				e) {
+			throw e;
+		}
+	}
+	
+	private static byte[] transToSizedBytes(String inStr, int size) {
+		byte[] bytesIn = null;
+		try {
+			bytesIn = inStr.getBytes(DEFAULT_ENCODING);
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			return null;
+		}
 		byte[] bytesOut = new byte[size];
 		int maxLen = bytesIn.length > size ? size : bytesIn.length;
 		System.arraycopy(bytesIn, 0, bytesOut, 0, maxLen);

@@ -2,7 +2,6 @@ package com.xmage.dm01.controller;
 
 import java.security.GeneralSecurityException;
 import java.security.Key;
-import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -16,14 +15,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 
 import com.xmage.dm01.model.User;
 import com.xmage.dm01.utils.AesCBC;
 import com.xmage.dm01.utils.AesUtil;
-import com.xmage.dm01.utils.AlgorithmUtil;
-import com.xmage.dm01.utils.Base64Test;
 import com.xmage.dm01.utils.CipherUtil;
 
 @Controller
@@ -122,41 +117,34 @@ public class UserController {
     @RequestMapping("/aes")
     public String genrateAes(ModelMap model){
 	    //String key = "SOME-ENCRYPTION-KEY-USED-ONLY-16-OR-32-BYTES";
-	    //String key = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT";
-	    String key = "4E2BDA58E0166088612B044AA3C8755BB5F27D032F3564DEDB8EEBA7C56D1E40";
+	    String key = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT";
 	    String iv = "SOME-INITIAL-VECTOR-USED-ONLY-16-BYTES";
 	    
-	    String[] arrParams={"10831918","1543204765.2344618","1543204765"};
+	    String[] arrParams={"10831918","1543204765.2344618","1543386581"};
 	    String plain = JSON.toJSONString(arrParams);  
-        System.out.println("jsonString2:" + plain); 
+        System.out.println("aes plain:" + plain); 
 
 	    
 	    try {
 	      System.out.println("plain::"+plain);
 	      System.out.println("key::"+key);
-	      //System.out.println("iv::"+iv);
-	      //System.out.println("iv::"+Base64.getEncoder().encodeToString(iv.getBytes("UTF-8")));
-	     
-	      //System.out.println("iv::"+Base64.getEncoder().encodeToString(iv.getBytes()));
 	      
 	      byte[] data = plain.getBytes("UTF-8");
-	      //String aesEncrypted128 = AesUtil.encrypt(data, key, iv, 128);
 	      String aesEncrypted256 = AesUtil.encrypt(data, key, iv, 256);
+	      System.out.println("aesEncrypted256:"+aesEncrypted256);
 
-	      //System.out.println("aesEncrypted128::"+aesEncrypted128);
-	      System.out.println("aesEncrypted256::"+aesEncrypted256);
-	      
-	      //String aesDecrypted128 = AesUtil.decrypt(aesEncrypted128, key, iv, 128);
-	      //iv = AesUtil.cipherIv;
 	      String aesDecrypted256 = AesUtil.decrypt(aesEncrypted256, key, 256);
-
-	      //System.out.println("aesDecrypted128::"+aesDecrypted128);
-	      System.out.println("aesDecrypted256::"+aesDecrypted256);
+	      System.out.println("aesDecrypted256:"+aesDecrypted256);
+	      
+	      
+	      String mixedToken = AesUtil.encryptMixed(data, key, iv, 256);
+	      System.out.println("mixedToken:"+mixedToken);
+	      
 	    } catch (Exception e) {
 	      e.printStackTrace();
 	    }
 	    
-	    model.addAttribute("user",new User((long) 1085265,"张三",20,"中国广州"));
+	    model.addAttribute("user",new User((long) 1085265,"张三",20,"中国广州-aes"));
         return "/user/detail";
    }
     
@@ -219,45 +207,7 @@ public class UserController {
         return "/user/detail";
     }
     
-    @RequestMapping(value = "/base64", method = RequestMethod.POST)
-    public String test64Demo(
-    		@RequestParam(value = "code", required = true, defaultValue = "") String code,
-    		@RequestParam(value = "key", required = true, defaultValue = "") String skey,
-    		ModelMap model
-    		) {  
-    	
-		Timestamp ts = new Timestamp((new Date()).getTime());
-	    //String key = "SOME-ENCRYPTION-KEY-USED-ONLY-16-OR-32-BYTES";
-	    //String key = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT";	  
-	    String key = "4E2BDA58E0166088612B044AA3C8755BB5F27D032F3564DEDB8EEBA7C56D1E40";
-	    //String iv = "SOME-INITIAL-VECTOR-USED-ONLY-16-BYTES";
-	    key = skey;
-	    //String[] arrParams={"10831918","1543204765.2344618","1543204765"};
-	    String[] arrParams={"10831918","1543204765.2344618", ts.toString()};
-	    String plain = JSON.toJSONString(arrParams);  
-        System.out.println("plain text:" + plain); 
-        
-        try {
-
-        	String encodeStr = Base64Test.encrypt(plain, key);
-
-        	System.out.println("加密后的密文为：" + encodeStr);
-
-        	//System.out.println("解密密文为：" + cm.decodeCrypt(encodeByte, ckey));
-        	System.out.println("解密密文为：" + Base64Test.decrypt(encodeStr, key));
-
-        	String inputCodeBase64 = code;
-        	System.out.println("input密文输入为：" + inputCodeBase64);
-        	System.out.println("input密文解密为：" + Base64Test.decrypt(inputCodeBase64, key));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-        
-    	model.addAttribute("user",new User((long) 1085265,"张三",20,"中国广州GZSAM"));
-        return "/user/detail";
-    }
-    
+       
     @GetMapping("/{userId}/profile")
     public String  getUserProfile(@PathVariable Long userId,ModelMap model) {  
     	
