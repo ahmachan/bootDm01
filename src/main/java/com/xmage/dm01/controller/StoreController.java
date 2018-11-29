@@ -2,6 +2,7 @@ package com.xmage.dm01.controller;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -40,18 +41,19 @@ public class StoreController {
 	@RequestMapping(value = "/base64", method = RequestMethod.POST)
     public Map<String, Object> test64Demo(
     		@RequestParam(value = "code", required = true, defaultValue = "") String code,
-    		@RequestParam(value = "key", required = true, defaultValue = "") String skey
+    		@RequestParam(value = "key", required = true, defaultValue = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT") String pkey,
+    		@RequestParam(value = "iv", required = false, defaultValue = "147abcdefg258369") String piv,
+    		@RequestParam(value = "uid", required = false, defaultValue = "10831918") Long userId,
+    		@RequestParam(value = "rand", required = false, defaultValue = "1543204765.2344618") String rand,
+    		@RequestParam(value = "ts", required = false, defaultValue = "1543386581") String timestamp
     		) {  
+		
 		Base64Test base64Algorithm = Base64Test.getInstance();
-	    //String key = "SOME-ENCRYPTION-KEY-USED-ONLY-16-OR-32-BYTES";
-	    //String key = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT";	  
-	    String key = skey;	
-	    //String[] arrParams={"10831918","1543204765.2344618","1543204765"};
-	    //String timestamp = "1543386581";
-	    Long nowst = (new Date()).getTime();
-	    String timestamp = String.valueOf(nowst/1000);//通过整除将最后的三位去掉,保证是纯正时间戳
-	    String randStr = base64Algorithm.createRandChar(8);
-	    Object[] arrParams={"10831918",String.format("%s.%s",String.valueOf(nowst),randStr), timestamp};
+		String iv = piv;
+	    String key = pkey;	    
+	    
+	    // rand = base64Algorithm.createRandChar(8);
+	    Object[] arrParams={userId,rand, timestamp};
 	    String plain = JSON.toJSONString(arrParams);  
         System.out.println("plain text:" + plain); 
         String encodeStr = "";
@@ -61,16 +63,23 @@ public class StoreController {
         
         try {
         	
-        	encodeStr = base64Algorithm.encrypt(plain, key);
-        	decodeStr = base64Algorithm.decrypt(encodeStr, key);
+        	String string = "hello 世界小姐";
+            byte[] bytes = string.getBytes();//获得byte数组
+            System.out.println("bytes-->" + Arrays.toString(bytes));//打印byte数组
+            System.out.println("string-->" + new String(bytes));
+        	
+        	encodeStr = base64Algorithm.encrypt(plain, key,iv);
+        	//encodeStr = Base64Test.java_openssl_encrypt(plain,key, iv);
+        	decodeStr = base64Algorithm.decrypt(encodeStr, key,iv);
         	
         	System.out.println("加密后的密文为：" + encodeStr);
         	//System.out.println("解密密文为：" + cm.decodeCrypt(encodeByte, ckey));
         	System.out.println("解密密文为：" + decodeStr);
 
-        	inputDecode = base64Algorithm.decrypt(inputEncode, key);
+        	inputDecode = base64Algorithm.decrypt(inputEncode, key,iv);
         	System.out.println("input密文输入为：" + inputEncode);
         	System.out.println("input密文解密为：" + inputDecode);
+        	
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -88,13 +97,16 @@ public class StoreController {
 	@RequestMapping(value = "/aes256", method = RequestMethod.POST)
     public Map<String, Object> genrateAes(
     		@RequestParam(value = "code", required = true, defaultValue = "") String code,
-    		@RequestParam(value = "key", required = true, defaultValue = "") String skey
+    		@RequestParam(value = "key", required = true, defaultValue = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT") String pkey,
+    		@RequestParam(value = "iv", required = false, defaultValue = "147abcdefg258369") String piv,
+    		@RequestParam(value = "uid", required = false, defaultValue = "10831918") Long userId,
+    		@RequestParam(value = "rand", required = false, defaultValue = "1543204765.2344618") String rand,
+    		@RequestParam(value = "ts", required = false, defaultValue = "1543386581") String timestamp
     		) {  
 		
-		String iv = "SOME-INITIAL-VECTOR-USED-ONLY-16-BYTES";
-	    String key = skey;	
-	    String timestamp = "1543386581";
-	    Object[] arrParams={"10831918","1543204765.2344618", timestamp};
+		String iv = piv;
+	    String key = pkey;
+	    Object[] arrParams={userId,rand, timestamp};
 	    /*
 	    Base64Test base64Algorithm = Base64Test.getInstance();
 	    Long nowst = (new Date()).getTime();

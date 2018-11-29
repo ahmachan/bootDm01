@@ -29,7 +29,6 @@ public class Base64Test {
 
 	private static Base64Test instance = null;
 	private static Cipher cipher;
-	private static String runIv = "";
 	
     private Base64Test(){
     }
@@ -39,10 +38,8 @@ public class Base64Test {
 
         	try {
         		cipher = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
-        		//runIv = "SOME-INITIAL-VECTOR-USED-ONLY-16-BYTES";   
-        		runIv = instance.createRandChar(cipher.getBlockSize());//16
+        		//instance.createRandChar(cipher.getBlockSize());//16
         		System.out.println("CIPHER IV:");
-        		System.out.println(runIv);
         	} catch (NoSuchAlgorithmException e) {
         		// TODO Auto-generated catch block
         		e.printStackTrace();
@@ -62,20 +59,20 @@ public class Base64Test {
 	 * @return
 	 * @throws Exception
 	 */
-	public String encrypt(String plainData, String secretKey)
+	public String encrypt(String plainData, String secretKey, String secretIv)
 			throws Exception {
-		
-        String secretIv = runIv;   
-		byte[] ivBytes = toSizedBytes(secretIv, cipher.getBlockSize());	
+		byte[] ivBytes = transToSizedBytes(secretIv, cipher.getBlockSize());	
 		IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);//使用向量iv从而提升加密算法的强度
 		//IvParameterSpec ivSpec = new IvParameterSpec(IV, 0, 16);//AES:0-16,DES:0-8
-		//byte[] keyBytes = secretKey.getBytes();
+		byte[] keyBytes = transToSizedBytes(secretKey,256/8);
 		//keyBytes = Arrays.copyOfRange(keyBytes,0,16);
-		SecretKeySpec paramKey = new SecretKeySpec(toSizedBytes(secretKey,256/8),SECRET_KEY_ALGORITHM);
+		SecretKeySpec keySpec = new SecretKeySpec(keyBytes,SECRET_KEY_ALGORITHM);
 		
-		cipher.init(Cipher.ENCRYPT_MODE, paramKey, ivSpec);
+		cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
 		byte[] results = cipher.doFinal(plainData.getBytes());
-		return Base64.getEncoder().encodeToString(results);
+		//return Base64.getEncoder().encodeToString(results);
+		String lastStr = String.format("%s%s", new String(results),new String(ivBytes));
+		return Base64.getEncoder().encodeToString(lastStr.getBytes());
 	}
 
 	/**
@@ -85,17 +82,16 @@ public class Base64Test {
 	 * @return
 	 * @throws Exception
 	 */
-	public String decrypt(String base64Data, String secretKey) throws Exception {
-		String secretIv = runIv;   
-		byte[] ivBytes = toSizedBytes(secretIv, cipher.getBlockSize());		
+	public String decrypt(String base64Data, String secretKey, String secretIv) throws Exception {
+		byte[] ivBytes = transToSizedBytes(secretIv, cipher.getBlockSize());		
 		IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
 		//IvParameterSpec ivSpec = new IvParameterSpec(IV, 0, 16);//AES:0-16,DES:0-8
 		//byte[] keyBytes = secretKey.getBytes(DEFAULT_ENCODING);
 		//keyBytes = Arrays.copyOfRange(keyBytes,0,16);
 		byte[] keyBytes = toSizedBytes(secretKey,256/8);
-		SecretKeySpec paramKey = new SecretKeySpec(keyBytes, SECRET_KEY_ALGORITHM);
+		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, SECRET_KEY_ALGORITHM);
 		
-		cipher.init(Cipher.DECRYPT_MODE, paramKey, ivSpec);
+		cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 		byte[] result = cipher.doFinal(Base64.getDecoder().decode(base64Data));
 		return new String(result,DEFAULT_ENCODING);
 	}
@@ -132,8 +128,15 @@ public class Base64Test {
 		return result;
 	}
 	
-	private static byte[] string2SizedBytes(String inStr, int size) throws UnsupportedEncodingException {
-		byte[] bytesIn = inStr.getBytes(DEFAULT_ENCODING);
+	private static byte[] transToSizedBytes(String inStr, int size) {
+		byte[] bytesIn = null;
+		try {
+			bytesIn = inStr.getBytes(DEFAULT_ENCODING);
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			return null;
+		}
 		byte[] bytesOut = new byte[size];
 		int maxLen = bytesIn.length > size ? size : bytesIn.length;
 		System.arraycopy(bytesIn, 0, bytesOut, 0, maxLen);
@@ -155,11 +158,7 @@ public class Base64Test {
 			//e.printStackTrace();
 			return null;
 		}
-		/*
-		int maxLen = tmpLength > size ? size : tmpLength;
-		System.arraycopy(tempBytes, 0, bytesOut, 0, maxLen);
-		return bytesOut;
-		*/
+	
 		if(tmpLength>=size){
 			return Arrays.copyOfRange(tempBytes,0,size);
 		}else{
@@ -169,4 +168,27 @@ public class Base64Test {
 			return bytesOut;
 		}
 	}
+	
+	public static String java_openssl_encrypt(String data, String pwdKey, String iv) throws Exception {
+		int keyBlockSizeBit = 256;
+		/*
+		int keySizeBit = keyBlockSizeBit/8;//32size
+        byte[] keyBytes = new byte[keySizeBit];
+        byte[] pwdBytes = pwdKey.getBytes();
+        for (int i = 0; i < keySizeBit; i++) {
+        	keyBytes[i]=(i < pwdBytes.length?pwdBytes[i]:0);            
+        }
+        */
+        byte[] ivBytes = transToSizedBytes(iv, cipher.getBlockSize());//16
+		byte[] keyBytes = transToSizedBytes(pwdKey,keyBlockSizeBit/8);//32
+		Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE,
+        		new SecretKeySpec(keyBytes, SECRET_KEY_ALGORITHM),
+        		new IvParameterSpec(ivBytes)
+        		);
+
+        byte[] dataBytes = cipher.doFinal(data.getBytes());
+        return Base64.getEncoder().encodeToString(dataBytes);
+    }
+
 }

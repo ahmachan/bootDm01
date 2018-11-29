@@ -98,21 +98,26 @@ public class AesUtil {
 			
 			ciper.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
             byte[] lastBytes = ciper.doFinal(data);
-            int size =lastBytes.length+ivBytes.length;
-            byte[] unitBytes =  new byte[size];
-            System.arraycopy(lastBytes, 0, unitBytes, 0, lastBytes.length);
-            System.arraycopy(ivBytes, 0, unitBytes, lastBytes.length, ivBytes.length);
+            //int size =lastBytes.length + ivBytes.length;
+            //byte[] unitBytes =  new byte[size];
+            //System.arraycopy(lastBytes, 0, unitBytes, 0, lastBytes.length);
+            //System.arraycopy(ivBytes, 0, unitBytes, lastBytes.length, ivBytes.length);
             
             String lastString = Base64.getEncoder().encodeToString(lastBytes);
             String lastIvString = Base64.getEncoder().encodeToString(ivBytes);
-			return String.format("%s,%s|base64Len=%d:%d|bytesLen=%d:%d|other:%s|total:%d", 
+            String unitString =String.format("%s%s",
+            		new String(lastBytes,DEFAULT_ENCODING),
+            		iv
+            		);
+            byte[] unitBytes = unitString.getBytes(DEFAULT_ENCODING);
+			return String.format("%s,%s|base64Len=%d:%d|bytesLen=%d:%d|merge:%s|total:%d", 
 					lastString,
             		lastIvString,
             		lastString.length(),
             		lastIvString.length(),
             		lastBytes.length,
             		ivBytes.length,
-            		Base64.getEncoder().encodeToString(unitBytes),
+            		Base64.getEncoder().encodeToString(unitBytes),    
             		unitBytes.length
             		);
 		} catch (NoSuchAlgorithmException
@@ -164,8 +169,8 @@ public class AesUtil {
 			
 			ciper.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 			return new String(ciper.doFinal(data));
-			*/
-			return inputBytesLength+"---"+out1len;
+			*/		
+			return String.format("input-bytes=%d:%d", inputBytesLength,out1len);
 		} catch (NoSuchAlgorithmException
 				| NoSuchPaddingException
 				//| InvalidKeyException
