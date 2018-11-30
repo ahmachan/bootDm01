@@ -94,6 +94,35 @@ public class StoreController {
         return map;
     }
 	
+	@RequestMapping(value = "/encode/php", method = RequestMethod.POST)
+    public Map<String, Object> base64formphp(
+    		@RequestParam(value = "code", required = true, defaultValue = "") String code,
+    		@RequestParam(value = "key", required = true, defaultValue = "Fquo7wacJLG5EOgGbYKMQpWxuSIHrpnMSjX87QwJWoTD70Fzo0I7BKXgLpFGPXoT") String pkey
+    		) {  
+		
+		Base64Test base64Algorithm = Base64Test.getInstance();
+
+        String inputDecode = "";
+        
+        try {
+
+        	inputDecode = base64Algorithm.decryptFormPhp(code, pkey);
+
+        	System.out.println("input密文输入为：" + code);
+        	System.out.println("input密文解密为：" + inputDecode);
+        	
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        
+        Map<String, Object> map = new HashMap<String, Object>();
+        map.put("input_encode", code);
+        map.put("input_decode", inputDecode);
+        
+        return map;
+    }
+	
 	@RequestMapping(value = "/aes256", method = RequestMethod.POST)
     public Map<String, Object> genrateAes(
     		@RequestParam(value = "code", required = true, defaultValue = "") String code,

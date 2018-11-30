@@ -5,6 +5,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import org.apache.commons.codec.CharEncoding;
+
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.security.NoSuchAlgorithmException;
@@ -61,7 +63,9 @@ public class Base64Test {
 	 */
 	public String encrypt(String plainData, String secretKey, String secretIv)
 			throws Exception {
+		secretIv = secretIv.substring(0, 16);
 		byte[] ivBytes = transToSizedBytes(secretIv, cipher.getBlockSize());	
+		//
 		IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);//使用向量iv从而提升加密算法的强度
 		//IvParameterSpec ivSpec = new IvParameterSpec(IV, 0, 16);//AES:0-16,DES:0-8
 		byte[] keyBytes = transToSizedBytes(secretKey,256/8);
@@ -71,8 +75,15 @@ public class Base64Test {
 		cipher.init(Cipher.ENCRYPT_MODE, keySpec, ivSpec);
 		byte[] results = cipher.doFinal(plainData.getBytes());
 		//return Base64.getEncoder().encodeToString(results);
-		String lastStr = String.format("%s%s", new String(results),new String(ivBytes));
-		return Base64.getEncoder().encodeToString(lastStr.getBytes());
+		String lastStr = String.format("%s%s", new String(results),secretIv);
+		System.out.println(lastStr);
+		String m64 = Base64.getEncoder().encodeToString(transToSizedBytes(lastStr,64));
+		String m32 = Base64.getEncoder().encodeToString(transToSizedBytes(lastStr,32));
+		String m16 = Base64.getEncoder().encodeToString(transToSizedBytes(lastStr,16));
+		System.out.println(m64);
+		System.out.println(m32);
+		System.out.println(m16);
+		return m64;
 	}
 
 	/**
@@ -88,13 +99,44 @@ public class Base64Test {
 		//IvParameterSpec ivSpec = new IvParameterSpec(IV, 0, 16);//AES:0-16,DES:0-8
 		//byte[] keyBytes = secretKey.getBytes(DEFAULT_ENCODING);
 		//keyBytes = Arrays.copyOfRange(keyBytes,0,16);
-		byte[] keyBytes = toSizedBytes(secretKey,256/8);
+		byte[] keyBytes = transToSizedBytes(secretKey,256/8);
 		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, SECRET_KEY_ALGORITHM);
 		
 		cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
 		byte[] result = cipher.doFinal(Base64.getDecoder().decode(base64Data));
-		return new String(result,DEFAULT_ENCODING);
+		return new String(result,CharEncoding.UTF_8);
 	}
+	
+	/**
+	 * @描述：base64解密
+	 * @param base64Data
+	 * @param secretKey
+	 * @return
+	 * @throws Exception
+	 */
+	public String decryptFormPhp(String base64Data, String secretKey) throws Exception {
+		base64Data = urlEncoderText(base64Data);
+		byte[] decodeBytes = Base64.getUrlDecoder().decode(base64Data);
+		String decodeData = new String(decodeBytes,CharEncoding.UTF_8);
+		int totalLength = decodeData.length();
+		int originalLength = totalLength - cipher.getBlockSize();
+		String origin = decodeData.substring(0, originalLength);
+		String secretIv = decodeData.substring(originalLength);
+		System.out.println(origin);
+		System.out.println(secretIv);
+		/**/
+		byte[] ivBytes = transToSizedBytes(secretIv, cipher.getBlockSize());		
+		IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
+		byte[] keyBytes = transToSizedBytes(secretKey,256/8);
+		SecretKeySpec keySpec = new SecretKeySpec(keyBytes, SECRET_KEY_ALGORITHM);
+		
+		cipher.init(Cipher.DECRYPT_MODE, keySpec, ivSpec);
+		byte[] result = cipher.doFinal(origin.getBytes(CharEncoding.UTF_8));
+		return new String(result,CharEncoding.UTF_8);
+		
+		//return decodeData;
+	}
+		
 
 	public String createRandChar(int len){
 		String sources = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // 加上一些字母，就可以生成pc站的验证码了
@@ -109,64 +151,43 @@ public class Base64Test {
 		return sb.toString();
 	}
 	
-	public static String toHex(byte[] buf) {
-		if (buf == null)
-			return "";
-		StringBuilder result = new StringBuilder(2 * buf.length);
-		for (int i = 0; i < buf.length; i++) {
-			result.append(HEX.charAt((buf[i] >> 4) & 0x0f)).append(
-					HEX.charAt(buf[i] & 0x0f));
+	//url进行转码
+	public String urlEncoderText(String text) {
+		try {
+			return java.net.URLEncoder.encode(text, "utf-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			return null;
 		}
-		return result.toString();
+	}
+	//url进行解码
+	public String urlDecoderText(String text) {
+		try {
+			return java.net.URLDecoder.decode(text, "utf-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			return null;
+		}
 	}
 
-	public static byte[] toByte(String hexString) {
-		int len = hexString.length() / 2;
-		byte[] result = new byte[len];
-		for (int i = 0; i < len; i++)
-			result[i] = Integer.valueOf(hexString.substring(2 * i, 2 * i + 2),16).byteValue();
-		return result;
-	}
 	
 	private static byte[] transToSizedBytes(String inStr, int size) {
 		byte[] bytesIn = null;
 		try {
 			bytesIn = inStr.getBytes(DEFAULT_ENCODING);
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
-			return null;
-		}
-		byte[] bytesOut = new byte[size];
-		int maxLen = bytesIn.length > size ? size : bytesIn.length;
-		System.arraycopy(bytesIn, 0, bytesOut, 0, maxLen);
-		return bytesOut;
-	}
-	
-	private static byte[] toSizedBytes(String original,int size){
-		//Cipher cipher = Cipher.getInstance(CIPHER_INSTANCE_TYPE);
-		//System.out.println(cipher.getBlockSize());
-		size = size<=0?cipher.getBlockSize():size;//-->16
-		byte[] bytesOut = new byte[size];
-		byte[] tempBytes = null;
-		int tmpLength = 0;
-		try {
-			tempBytes = original.getBytes(DEFAULT_ENCODING);
-			tmpLength = tempBytes.length;
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			//e.printStackTrace();
-			return null;
-		}
-	
-		if(tmpLength>=size){
-			return Arrays.copyOfRange(tempBytes,0,size);
-		}else{
-			for(int i=size-tmpLength;i<size;i++){
-				bytesOut[i] = (byte) 0;
-			}
+			
+			byte[] bytesOut = new byte[size];
+			int maxLen = bytesIn.length > size ? size : bytesIn.length;
+			System.arraycopy(bytesIn, 0, bytesOut, 0, maxLen);
+			bytesOut = new String(bytesOut, CharEncoding.UTF_8).getBytes(CharEncoding.UTF_8);
 			return bytesOut;
-		}
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			//e.printStackTrace();
+			return null;
+		}		
 	}
 	
 	public static String java_openssl_encrypt(String data, String pwdKey, String iv) throws Exception {
